@@ -1,0 +1,1 @@
+v0.8.8: Desktop approved hero now fills nearly the entire viewport width (24 px side margins). Fixed the 1260px max-width constraint from older stylesheets by allowing the hero to extend outside the main container. Mobile artwork and back-end features unchanged.

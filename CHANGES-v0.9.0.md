@@ -1,0 +1,1 @@
+v0.9.0: Accessible clickable desktop hero CTAs for Explore Your Smile and Dental Professional Access. Fixed mobile hero: removed image with baked-in text and replaced with sharp clean crop of the user-approved photo, a separate solid-background heading, functioning Get Started link, and unobstructed portrait. Existing API and app.js unchanged.

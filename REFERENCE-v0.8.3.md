@@ -1,0 +1,1 @@
+Design reference reproduction using the user supplied homepage and treatment-screen reference crops. Uses the original app JS and server functionality from v0.8.2. This is a UI-only iterative rebuild; real authentication / API and mobile Safari still need end-to-end checks. No secrets included.

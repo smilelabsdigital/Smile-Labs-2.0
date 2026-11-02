@@ -1,0 +1,3 @@
+# Smile Labs Digital v0.8.2 — Approved Screenshot Design
+
+Layout follows the four user-selected screen designs: portrait hero, email-first dentist login, camera/library photo input with consent, and treatment cards with three photo-based shades. Existing AI prompts and endpoints preserved. Dentist registration remains operational. Added limited guest trial with signed cookie and account record for private testing only. NOT robust one-trial-per-person enforcement: browsers can clear cookies; Render free local JSON may disappear after redeploy. Use an external persistent database and abuse controls before public release. Never upload patient data to the prototype.
