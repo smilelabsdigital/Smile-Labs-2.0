@@ -1,0 +1,76 @@
+/* v0.9.1 — full-bleed mobile portrait, elegant readable overlay, interactive CTA.
+   Desktop approved artwork and existing application behaviours untouched. */
+@media (max-width:680px){
+ .hero-approved-artwork{
+   width:calc(100% - 20px)!important;max-width:468px!important;
+   min-height:0!important;height:clamp(580px,164vw,715px)!important;
+   display:block!important;aspect-ratio:auto!important;
+   position:relative!important;isolation:isolate!important;
+   margin:10px auto 28px!important;border-radius:24px!important;
+   overflow:hidden!important;background:#e8dafa!important;
+ }
+ .hero-approved-picture{
+   display:block!important;position:absolute!important;inset:0!important;
+   width:100%!important;height:100%!important;z-index:0!important;
+   background:#d8c3ee!important;
+ }
+ .hero-approved-picture img,.hero-approved-picture source{display:none!important}
+ .hero-approved-picture::after{
+   content:''!important;position:absolute!important;inset:0!important;
+   background-image:url('/mobile-portrait-clean.webp')!important;
+   background-size:cover!important;background-position:54% 50%!important;
+   background-repeat:no-repeat!important;
+ }
+ .hero-approved-picture::before{
+   content:''!important;position:absolute!important;inset:0!important;z-index:2!important;
+   background:linear-gradient(180deg,
+    rgba(252,249,255,.98) 0%,rgba(249,245,255,.97) 17%,
+    rgba(247,241,255,.91) 29%,rgba(245,238,253,.74) 39%,
+    rgba(244,237,254,.08) 58%,rgba(237,225,250,0) 72%,
+    rgba(244,236,255,.30) 87%,rgba(245,238,255,.98) 100%)!important;
+ }
+ .hero-mobile-content{
+   display:block!important;position:absolute!important;z-index:5!important;
+   top:0!important;left:0!important;right:0!important;
+   min-height:0!important;background:transparent!important;
+   padding:29px 25px 0!important;
+ }
+ .hero-mobile-kicker{display:block!important;margin:0 0 15px!important;font-size:9px!important;letter-spacing:.17em!important;font-weight:700!important;color:#5b3197!important}
+ .hero-mobile-content h1{
+   margin:0 0 14px!important;max-width:330px!important;
+   font-family:Georgia,'Times New Roman',serif!important;
+   font-size:clamp(39px,10.7vw,56px)!important;
+   line-height:1.04!important;letter-spacing:-.045em!important;
+   color:#10224a!important;font-weight:500!important;
+   text-shadow:0 1px 0 rgba(255,255,255,.22)!important;
+ }
+ .hero-mobile-content h1 em{color:#c59121!important;font-style:normal!important}
+ .hero-mobile-content p{
+   max-width:270px!important;margin:0 0 18px!important;
+   color:#343a59!important;font:400 14px/1.5 Arial,sans-serif!important;
+ }
+ .hero-mobile-button{
+   display:inline-flex!important;align-items:center!important;justify-content:center!important;
+   min-height:48px!important;padding:0 23px!important;
+   border-radius:14px!important;background:linear-gradient(110deg,#692dc5,#482088)!important;
+   box-shadow:0 8px 22px rgba(72,30,132,.2)!important;
+   color:white!important;font-size:13px!important;font-weight:700!important;
+   position:relative!important;z-index:8!important;
+ }
+ .hero-mobile-features{
+   display:flex!important;position:absolute!important;z-index:5!important;
+   bottom:0!important;left:0!important;right:0!important;top:auto!important;
+   margin:0!important;gap:0!important;
+   padding:34px 12px 21px!important;
+   background:linear-gradient(180deg,rgba(246,239,255,0),rgba(247,242,255,.90) 50%,#f7f2ff 100%)!important;
+   justify-content:space-around!important;
+ }
+ .hero-mobile-features>div{flex:1!important;min-width:0!important;font-size:11px!important;line-height:1.18!important;gap:7px!important;color:#12214a!important}
+ .hero-mobile-features svg{height:25px!important;width:25px!important;stroke:#5f25ae!important}
+}
+@media(max-width:360px){
+ .hero-approved-artwork{height:600px!important}
+ .hero-mobile-content{padding:24px 20px 0!important}
+ .hero-mobile-content h1{font-size:39px!important}
+ .hero-mobile-content p{font-size:13px!important}
+}

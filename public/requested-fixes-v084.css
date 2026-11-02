@@ -1,0 +1,42 @@
+/* v0.8.4: four user-requested changes. Loaded after all legacy styles. */
+.studio-topbar,.journey,.studio-intro-steps{display:none!important}
+/* Show more of the approved woman instead of zooming into her eyes. */
+.hero.premium-hero{overflow:hidden!important;isolation:isolate!important}
+.hero.premium-hero .hero-photo{background-image:url('/approved-hero-portrait-hq.jpg')!important;width:49%!important;clip-path:ellipse(100% 108% at 100% 50%)!important;background-size:100% auto!important;background-position:center 39%!important;background-repeat:no-repeat!important;background-color:#d8c3f5!important}
+.premium-hero .hero-content{width:55%!important}
+/* Tight, readable account card and registration; keep required safety consents. */
+#accountShell.account-shell{max-width:500px!important;padding:29px 27px!important}
+#accountShell .simple-account-heading h2{font-size:27px!important;line-height:1.17!important;margin-bottom:8px!important}
+#accountShell .simple-account-heading p{margin-bottom:16px!important}
+#accountShell .account-form:where(:not([hidden])){gap:12px!important}
+#accountShell #registerForm h3{font-size:22px!important;letter-spacing:-.4px!important;text-align:center!important;margin:0 0 5px!important}
+#accountShell #registerForm .registration-subtitle{text-align:center!important;font-size:13px!important;line-height:1.4!important;margin:0 0 19px!important;color:#5b5870!important}
+#accountShell #registerForm .fields{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}
+#accountShell #registerForm .fields label{font-size:12px!important;line-height:1.4!important;min-width:0!important}
+#accountShell #registerForm .fields input{width:100%!important;min-width:0!important;height:46px!important;padding:0 12px!important;font-size:13px!important;box-sizing:border-box!important}
+#accountShell #registerForm .form-tick{display:flex!important;flex-flow:row nowrap!important;gap:11px!important;align-items:flex-start!important;font-size:12px!important;line-height:1.55!important;text-align:left!important;margin:10px 0!important;word-spacing:normal!important;letter-spacing:normal!important}
+#accountShell #registerForm .form-tick input{flex:0 0 16px!important;width:16px!important;height:16px!important;margin:2px 0 0!important}
+#accountShell #registerForm .form-tick span{display:block!important;flex:1!important;min-width:0!important}
+#accountShell #registerForm .form-tick a{display:inline!important;word-break:normal!important}
+#guestAccess.guest-access{margin-top:17px!important}
+#guestAccess.guest-access p{font-size:11px!important;line-height:1.4!important;text-align:center!important}
+/* Sharper resampled imagery; no CSS whitening filter on photos. */
+#shadePicker .shade-photo{display:block!important;width:100%!important;height:118px!important;object-fit:cover!important;object-position:center!important;filter:none!important;border-radius:10px!important}
+#shadePicker .shade-choice{min-width:0!important;padding:4px!important}
+#shadePicker .shade-options-three{gap:12px!important}
+#shadePicker .shade-title{font-size:12px!important}
+@media(max-width:680px){
+ .hero.premium-hero{height:auto!important;min-height:0!important;display:flex!important;flex-direction:column!important;padding:0!important}
+ .hero.premium-hero .hero-content{width:100%!important;height:auto!important;min-height:0!important;padding:27px 23px 18px!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;order:0!important}
+ .hero.premium-hero h1{font-size:clamp(43px,10vw,58px)!important;line-height:1.04!important}
+ .hero.premium-hero .hero-content>p{font-size:16px!important;max-width:270px!important;margin:0 0 17px!important}
+ .hero.premium-hero .hero-photo{position:relative!important;inset:auto!important;width:100%!important;height:330px!important;order:1!important;background-size:auto 590px!important;background-position:center 40%!important;background-color:#dfcff6!important;clip-path:none!important}
+ .hero.premium-hero::after{display:none!important}
+ .hero-trust-row{position:relative!important;inset:auto!important;order:0!important;margin-top:21px!important;width:100%!important;justify-content:space-between!important;background:transparent!important;padding:0!important;gap:5px!important}
+ .trust-item{font-size:11px!important;min-width:0!important;flex:1!important;text-align:center!important}
+ #accountShell.account-shell{margin:22px auto 30px!important;padding:25px 20px!important}
+ #accountShell #registerForm .fields{grid-template-columns:1fr!important;gap:10px!important}
+ #shadePicker .shade-photo{height:clamp(65px,18vw,115px)!important}
+ #shadePicker .shade-options-three{gap:5px!important}
+ #shadePicker .shade-title{font-size:10px!important;line-height:1.2!important}
+}

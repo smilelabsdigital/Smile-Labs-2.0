@@ -1,0 +1,32 @@
+/* v0.9.0 — fix functional desktop CTAs and make mobile hero legible.
+   Desktop uses the user's exact approved art. Mobile uses a clean photo crop
+   from the SAME artwork (no baked-in heading), with accessible HTML text/buttons. */
+.hero-professional-cta{display:none}
+@media (min-width:681px){
+  .hero-approved-cta,.hero-professional-cta{position:absolute!important;display:block!important;z-index:10!important;top:62.7%!important;height:9.1%!important;cursor:pointer;border-radius:40px}
+  .hero-approved-cta{left:9.95%!important;width:12.8%!important}
+  .hero-professional-cta{left:23.5%!important;width:16.2%!important}
+  .hero-approved-cta:hover,.hero-professional-cta:hover{background:rgba(255,255,255,.13)}
+  .hero-approved-cta:focus-visible,.hero-professional-cta:focus-visible{outline:4px solid #ffca4e!important;outline-offset:2px}
+}
+@media (max-width:680px){
+ .hero-approved-artwork{box-sizing:border-box!important;position:relative!important;display:flex!important;flex-direction:column!important;width:calc(100% - 24px)!important;max-width:468px!important;margin:12px auto 26px!important;aspect-ratio:auto!important;min-height:665px!important;height:auto!important;overflow:hidden!important;border-radius:24px!important;background:#f4eefa!important;box-shadow:0 10px 35px rgba(60,35,105,.08)!important;line-height:normal!important}
+ .hero-approved-picture{position:absolute!important;z-index:0!important;left:0!important;right:0!important;top:41%!important;bottom:0!important;overflow:hidden!important;background:#d6c4f1!important}
+ .hero-approved-picture source,.hero-approved-picture img{display:none!important}
+ .hero-approved-picture::after{content:'';position:absolute;inset:0;background-image:url('/mobile-portrait-clean.webp');background-repeat:no-repeat;background-size:cover;background-position:51% 23%;}
+ .hero-approved-picture::before{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(to bottom,#f4effb 0%,rgba(244,239,251,.03) 22%,transparent 55%,rgba(245,237,255,.25) 85%,#f4eefa 100%)}
+ .hero-approved-cta,.hero-professional-cta{display:none!important}
+ .hero-mobile-content{position:relative!important;z-index:3!important;display:block!important;top:auto!important;left:auto!important;right:auto!important;margin:0!important;padding:29px 24px 0!important;min-height:290px!important;box-sizing:border-box!important;background:linear-gradient(120deg,#fffdfd,#f3edff 85%)!important;color:#122149!important}
+ .hero-mobile-kicker{font-size:10px!important;letter-spacing:.15em!important;margin-bottom:13px!important;color:#5d399a!important}
+ .hero-mobile-content h1{font-family:Georgia,'Times New Roman',serif!important;font-weight:500!important;font-size:clamp(40px,11.2vw,57px)!important;line-height:1.03!important;margin:0 0 11px!important;letter-spacing:-.045em!important}
+ .hero-mobile-content p{font-size:15px!important;line-height:1.45!important;max-width:270px!important;margin:0 0 15px!important}
+ .hero-mobile-button{position:relative;z-index:4;display:inline-flex!important;min-height:47px!important;padding:0 25px!important;border-radius:14px!important;font-size:14px!important;box-shadow:0 7px 16px rgba(71,28,155,.14)!important}
+ .hero-mobile-features{position:relative!important;z-index:4!important;display:flex!important;left:auto!important;right:auto!important;bottom:auto!important;top:auto!important;margin-top:295px!important;padding:22px 14px 21px!important;box-sizing:border-box!important;background:linear-gradient(to bottom,rgba(247,242,255,.78),#f5efff 55%)!important;gap:8px!important}
+ .hero-mobile-features>div{font-size:12px!important;gap:7px!important}
+ .hero-mobile-features svg{width:25px!important;height:25px!important}
+}
+@media (max-width:375px){
+ .hero-mobile-content{padding:24px 20px 0!important;min-height:288px!important}
+ .hero-mobile-content h1{font-size:42px!important}
+ .hero-mobile-features{margin-top:270px!important}
+}

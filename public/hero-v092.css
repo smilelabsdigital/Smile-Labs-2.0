@@ -1,0 +1,75 @@
+/* v0.9.2: single continuous portrait extending to the top of the mobile hero.
+   The foreground is live, accessible HTML, never text embedded in an image. */
+@media (max-width:680px) {
+  .hero-approved-artwork {
+    position:relative!important;isolation:isolate!important;display:block!important;
+    width:calc(100% - 24px)!important;max-width:468px!important;
+    margin:10px auto 28px!important;border-radius:23px!important;
+    height:clamp(615px,174vw,760px)!important;min-height:0!important;
+    overflow:hidden!important;background:#d9c7ed!important;
+    box-shadow:0 14px 35px rgba(42,19,85,.09)!important;
+  }
+  .hero-approved-picture {
+    display:block!important;position:absolute!important;
+    inset:0!important;width:100%!important;height:100%!important;
+    background:#d9c7ed!important;overflow:hidden!important;z-index:0!important;
+  }
+  .hero-approved-picture img,.hero-approved-picture source {display:none!important}
+  .hero-approved-picture::after {
+    content:''!important;display:block!important;position:absolute!important;inset:0!important;
+    background-image:url('/mobile-portrait-clean.webp')!important;
+    background-size:auto 100%!important;background-position:58% 50%!important;background-repeat:no-repeat!important;
+    transform:none!important;
+  }
+  .hero-approved-picture::before {
+    content:''!important;position:absolute!important;inset:0!important;z-index:2!important;
+    /* Soft editorial veil: image extends to top, yet copy remains legible. */
+    background:linear-gradient(180deg,rgba(253,250,255,.88) 0%,rgba(252,249,255,.83) 10%,rgba(249,243,255,.78) 24%,rgba(249,242,255,.59) 35%,rgba(247,241,255,.16) 49%,transparent 63%,transparent 75%,rgba(248,243,255,.43) 91%,rgba(249,245,255,.95) 100%)!important;
+    pointer-events:none!important;
+  }
+  .hero-approved-cta,.hero-professional-cta {display:none!important}
+  .hero-mobile-content {
+    display:block!important;position:absolute!important;z-index:5!important;
+    inset:0 0 auto 0!important;top:0!important;bottom:auto!important;
+    padding:25px 24px 0!important;margin:0!important;
+    min-height:0!important;background:transparent!important;
+    box-sizing:border-box!important;max-width:none!important;
+  }
+  .hero-mobile-kicker {display:block!important;font:700 9px/1.4 Arial,sans-serif!important;letter-spacing:.18em!important;color:#50208f!important;margin:0 0 12px!important}
+  .hero-mobile-content h1 {
+    font-family:Georgia,'Times New Roman',serif!important;font-size:clamp(40px,10.1vw,55px)!important;
+    font-weight:500!important;line-height:1.04!important;letter-spacing:-.05em!important;
+    color:#0e2149!important;max-width:370px!important;margin:0 0 11px!important;
+    text-shadow:0 1px 6px rgba(255,255,255,.48)!important;
+  }
+  .hero-mobile-content h1 em{font-style:normal!important;color:#b8831c!important}
+  .hero-mobile-content p{
+    max-width:260px!important;margin:0 0 16px!important;
+    font:400 15px/1.43 Arial,sans-serif!important;color:#1c294e!important;
+    text-shadow:0 1px 7px rgba(255,255,255,.55)!important;
+  }
+  .hero-mobile-button{
+    display:inline-flex!important;align-items:center!important;justify-content:center!important;
+    position:relative!important;z-index:9!important;min-height:48px!important;
+    padding:0 22px!important;border-radius:13px!important;
+    background:linear-gradient(110deg,#7433d0,#4d1e93)!important;color:#fff!important;
+    font-size:13px!important;font-weight:700!important;text-decoration:none!important;
+    box-shadow:0 9px 24px rgba(53,18,107,.24)!important;
+  }
+  .hero-mobile-button:focus-visible{outline:3px solid #d29a24!important;outline-offset:3px!important}
+  .hero-mobile-features{
+    display:flex!important;position:absolute!important;z-index:5!important;
+    bottom:0!important;left:0!important;right:0!important;top:auto!important;
+    margin:0!important;padding:30px 12px 19px!important;gap:2px!important;
+    justify-content:space-around!important;
+    background:linear-gradient(180deg,transparent,rgba(248,243,255,.76) 38%,#f8f4ff 96%)!important;
+  }
+  .hero-mobile-features>div{display:flex!important;flex:1!important;min-width:0!important;align-items:center!important;flex-direction:column!important;gap:6px!important;color:#18234b!important;font:500 11px/1.2 Arial,sans-serif!important;text-align:center!important}
+  .hero-mobile-features svg{width:25px!important;height:25px!important;stroke:#5e25b1!important;fill:none!important;stroke-width:1.7!important}
+}
+@media(max-width:360px){
+ .hero-approved-artwork{height:620px!important}
+ .hero-mobile-content{padding:23px 20px 0!important}
+ .hero-mobile-content h1{font-size:39px!important}
+ .hero-mobile-content p{font-size:14px!important}
+}

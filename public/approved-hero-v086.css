@@ -1,0 +1,34 @@
+/* v0.8.6: display the approved desktop and mobile artworks at native clarity.
+   CTA hotspot is an actual accessible link; the remainder of the studio is unchanged. */
+.hero-approved-artwork{position:relative;display:block;width:100%;max-width:1100px;margin:18px auto 30px;border-radius:22px;overflow:hidden;background:#f4eefd;line-height:0;box-shadow:0 15px 48px rgba(36,21,80,.09)}
+.hero-approved-picture,.hero-approved-picture img{display:block;width:100%;height:auto}
+.hero-approved-cta{position:absolute;display:block;left:8.2%;top:57.0%;width:35%;height:8%;border-radius:25px;z-index:2;cursor:pointer}
+.hero-approved-cta:focus-visible{outline:4px solid #fff;outline-offset:3px;box-shadow:0 0 0 7px #6d32d0}
+.hero-approved-cta:hover{background:rgba(255,255,255,.07)}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:680px){.hero-approved-artwork{margin:0 auto 24px;border-radius:20px;max-width:468px}.hero-approved-cta{left:7%;top:64.1%;width:55%;height:7.5%}}
+
+/* v0.8.7: panoramic desktop artboard. Mobile keeps the exact approved mobile image. */
+@media (min-width:681px){
+  .hero-approved-artwork{max-width:1600px;width:calc(100% - 40px);margin:20px auto 28px;border-radius:22px}
+  .hero-approved-picture img{aspect-ratio:20 / 9;object-fit:contain;width:100%;height:auto}
+  .hero-approved-cta{left:9%;top:53.5%;width:23%;height:11%;border-radius:20px}
+}
+
+/* v0.8.8: full-width desktop hero, intentionally breaking out of the
+   constrained main content container; mobile artwork is unaffected. */
+@media (min-width: 681px) {
+  .hero-approved-artwork {
+    box-sizing: border-box;
+    width: calc(100vw - 48px) !important;
+    max-width: none !important;
+    margin-left: calc(50% - 50vw + 24px) !important;
+    margin-right: 0 !important;
+    margin-top: 18px !important;
+    border-radius: 22px;
+  }
+  .hero-approved-picture img {width:100%;height:auto;display:block;aspect-ratio:20/9;object-fit:contain}
+}
+@media (min-width: 681px) and (max-width: 1000px) {
+  .hero-approved-artwork {width:calc(100vw - 24px)!important;margin-left:calc(50% - 50vw + 12px)!important}
+}

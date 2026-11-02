@@ -1,0 +1,5 @@
+/* v0.9.4 — clean outlined treatment icons and improved photographic shade presentation */
+#styles .style-ico svg{width:38px!important;height:38px!important;stroke-width:1.75!important;stroke-linecap:round;stroke-linejoin:round;filter:none!important;}
+#shadePicker .shade-photo{display:block;width:100%;height:auto;aspect-ratio:1.78;object-fit:cover;object-position:center 51%;border-radius:10px;image-rendering:auto;filter:none!important;}
+#shadePicker .shade-choice{min-width:0!important;overflow:hidden;}
+@media(max-width:480px){#shadePicker .shade-options-three{gap:8px!important;}#shadePicker .shade-choice{padding:7px 4px!important;}#shadePicker .shade-photo{border-radius:8px;}}
