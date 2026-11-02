@@ -15,6 +15,9 @@ const context=vm.createContext({});
 vm.runInContext(code,context);
 const selected=context.selectEditPrompt;
 assert.equal(selected('missing','B1'),'Correct the smile by adding the missing teeth. Keep existing teeth unchanged.');
+assert.match(selected('makeover','B1'),/cosmetic smile makeover/);
+assert.match(selected('makeover','B1'),/Only modify the teeth/);
+assert(html.includes('data-style="makeover"'));
 const list=['A2','B1','0M1'];
 const prompts=list.map(s=>selected('whitening',s));
 assert.equal(new Set(prompts).size,3,'Whitening prompts must be different');
@@ -34,3 +37,4 @@ assert.throws(()=>selected('whitening','invalid'));
 assert.throws(()=>selected('other','B1'));
 console.log('PASS: Exact missing-teeth prompt, 3 separate whitening-only prompts, UI values and API routing verified.');
 console.log('NOTE: This checks routing, not whether a generative AI preserves tooth anatomy in its image output.');
+
