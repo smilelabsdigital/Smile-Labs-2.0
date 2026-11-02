@@ -9,7 +9,8 @@ const TYPES={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8'
 const sharp=require('sharp');
 const styles=Object.freeze({
  whitening:'Whiten existing teeth only.',
- missing:'Correct the smile by adding the missing teeth. Keep existing teeth unchanged.'
+ missing:'Correct the smile by adding the missing teeth. Keep existing teeth unchanged.',
+ makeover:'Create a realistic, natural-looking cosmetic smile makeover. Improve the teeth alignment, shape, proportions, symmetry and colour to create a beautiful, healthy, balanced smile. Correct crooked, uneven, discoloured or poorly shaped teeth and close unwanted gaps where appropriate. Keep the result natural with believable tooth anatomy, subtle enamel texture and a suitable shade of white. Preserve the person’s original face, lips, gums, skin, facial expression, lighting and background. Only modify the teeth. The final result must look like a professional cosmetic dental treatment preview, not an artificial or exaggerated smile.'
 });
 // Each selection sends its own whitening-only instruction. Never add missing teeth during whitening.
 const WHITENING_SHADES=Object.freeze({
@@ -21,6 +22,7 @@ const WHITENING_SHADES=Object.freeze({
 // One prompt-selection function for every image edit. No shared extra instructions.
 function selectEditPrompt(style,shade){
  if(style==='missing')return styles.missing;
+ if(style==='makeover')return styles.makeover;
  if(style==='whitening' && Object.hasOwn(WHITENING_SHADES,shade))return WHITENING_SHADES[shade].instruction;
  throw Error('Invalid treatment or whitening shade.');
 }
