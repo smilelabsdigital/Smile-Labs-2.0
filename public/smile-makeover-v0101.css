@@ -1,0 +1,5 @@
+/* Premium three-treatment layout with no extra Smile Makeover settings. */
+#styles{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}
+#styles .style{min-width:0;min-height:148px;padding:20px 10px!important}
+#styles .style[data-style="makeover"] .style-ico{color:#6a34b9}
+@media(max-width:600px){#styles{gap:8px!important}#styles .style{min-height:126px!important;padding:13px 5px!important}#styles .style-ico svg{width:30px!important;height:30px!important}#styles .style strong{font-size:12px!important}#styles .style small{font-size:10px!important;line-height:1.25!important}}
