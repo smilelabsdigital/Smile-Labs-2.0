@@ -70,17 +70,17 @@ const emailOK=s=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)&&s.length<=254;
 function token(user){const payload=Buffer.from(JSON.stringify({id:user.id,exp:Date.now()+30*86400000})).toString('base64url');return payload+'.'+crypto.createHmac('sha256',SECRET).update(payload).digest('base64url');}
 function current(req){try{const raw=(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('sl_session='))?.slice(11)||'';const [p,s]=raw.split('.');if(!p||!s)return null;const valid=crypto.createHmac('sha256',SECRET).update(p).digest('base64url');if(!crypto.timingSafeEqual(Buffer.from(s),Buffer.from(valid)))return null;const d=JSON.parse(Buffer.from(p,'base64url').toString());return d.exp>Date.now()?db.users.find(u=>u.id===d.id)||null:null;}catch{return null;}}
 function cookie(res,user){res.setHeader('Set-Cookie',`sl_session=${token(user)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${process.env.COOKIE_SECURE==='true'?'; Secure':''}`);}
-// Quotas are computed separately by role. Professional credits reset each calendar month (UTC).
+// Preview quotas are lifetime, persisted in Neon. Approval adds 20 credits once; not unlimited.
 const currentMonth=()=>new Date().toISOString().slice(0,7);
-const guestLimit=()=>50; // Temporary prototype guest allowance, per browser cookie
-const dentistLimit=()=>10; // Fixed 10 per month, independent of old .env settings
+const guestLimit=()=>1; // One guest preview per persistent browser token
+const dentistLimit=u=>u?.approved?30:10; // 10 on verified signup, +20 on manual approval
 // Administrator testing is granted ONLY to verified account email addresses explicitly
 // listed server-side. The dashboard password alone is not a signed-in studio account.
 // No admin privileges can be requested through the registration form or browser.
-const adminTestEmails=()=>new Set((process.env.ADMIN_TEST_EMAILS||process.env.ADMIN_TEST_EMAIL||'').split(',').map(v=>v.trim().toLowerCase()).filter(Boolean));
+const adminTestEmails=()=>new Set([process.env.ADMIN_EMAIL||'',...(process.env.ADMIN_TEST_EMAILS||process.env.ADMIN_TEST_EMAIL||'').split(',')].map(v=>v.trim().toLowerCase()).filter(Boolean));
 const isAdminTester=u=>Boolean(u?.verified && adminTestEmails().has(String(u.email||'').toLowerCase()));
-function usedThisPeriod(u){return u.role==='dentist'&&u.month!==currentMonth()?0:Math.max(0,Number(u.used)||0);}
-function publicUser(u){return u?{id:u.id,name:u.name,email:u.email,role:u.role,verified:u.verified,approved:u.approved,adminTester:isAdminTester(u),used:usedThisPeriod(u),limit:isAdminTester(u)?null:(u.role==='dentist'?dentistLimit():(u.guestTokenHash?guestLimit():1)),clinic:u.clinic||'',gdc:u.gdc||'',created:u.created}:null;}
+function usedThisPeriod(u){return Math.max(0,Number(u.used)||0);}
+function publicUser(u){return u?{id:u.id,name:u.name,email:u.email,role:u.role,verified:u.verified,approved:u.approved,adminTester:isAdminTester(u),used:usedThisPeriod(u),limit:isAdminTester(u)?null:(u.role==='dentist'?dentistLimit(u):(u.guestTokenHash?guestLimit():1)),clinic:u.clinic||'',gdc:u.gdc||'',created:u.created,verifiedGdc:!!u.gdcVerified}:null;}
 async function sendEmail(to,subject,html){
  if(!process.env.RESEND_API_KEY||!process.env.RESEND_FROM_EMAIL){
   if(DEV){console.log('[EMAIL NOT CONFIGURED]',subject);return false;}
@@ -370,9 +370,9 @@ async function api(req,res,route){
  if(route==='/api/logout'&&req.method==='POST'){res.setHeader('Set-Cookie','sl_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');return reply(res,200,{ok:true});}
  const u=current(req);
  if(route==='/api/generate'&&req.method==='POST'){
-  if(!u||!u.verified)return reply(res,401,{error:'Please register and verify your email first.'});if(u.role==='dentist'&&!u.approved&&!isAdminTester(u))return reply(res,403,{error:'Your dental professional account is awaiting Smile Labs approval.'});
+  if(!u||!u.verified)return reply(res,401,{error:'Please register and verify your email first.'});
   if(!isAdminTester(u)&&u.role==='public'&&usedThisPeriod(u)>=(u.guestTokenHash?guestLimit():1))return reply(res,403,{error:'Your free preview allowance has been used.'});
-  if(!isAdminTester(u)&&u.role==='dentist'&&usedThisPeriod(u)>=dentistLimit())return reply(res,403,{error:'Your monthly allowance has been used.'});
+  if(!isAdminTester(u)&&u.role==='dentist'&&usedThisPeriod(u)>=dentistLimit(u))return reply(res,403,{error:'Your professional preview allowance has been used.'});
   if(pending.has(u.id))return reply(res,429,{error:'A generation is already running for this account.'});
   let d;try{d=await readBody(req);}catch{return reply(res,400,{error:'Invalid photograph upload.'});}
   if(d.consent!==true||d.photoConsentVersion!=='v1-cosmetic-preview'||!Object.hasOwn(styles,d.style)||(d.style==='whitening'&&!Object.hasOwn(WHITENING_SHADES,d.shade)))return reply(res,400,{error:'Please select a style and confirm photo permission.'});
@@ -417,7 +417,6 @@ async function api(req,res,route){
        const avg=delta/smallOriginal.length;
        if(avg<1.35)return reply(res,422,{error:'The AI returned an almost unchanged photograph. Please retry with a clearer photo. No app preview credit deducted (the API may still charge for the request).'});
      } catch(e) { console.warn('AI result validation:',e);return reply(res,422,{error:'The image provider returned an invalid result. No app preview credit deducted.'}); }
-     if(u.role==='dentist'&&u.month!==currentMonth()){u.month=currentMonth();u.used=0;}
      if(!isAdminTester(u))u.used++;await save();await notify(u,'generation',d.style);
      return reply(res,200,{image:'data:image/png;base64,'+final.toString('base64'),user:publicUser(u),selectedShade:d.style==='whitening'?d.shade:null,processing:'openai-image-edit'});
    }catch(e){console.error('Smile edit error:',e);return reply(res,502,{error:e.name==='AbortError'?'Image processing timed out. Please retry later.':e.message?.includes('fetch failed')?'Could not connect to the image service. Check your internet connection and restart the app; see VS Code terminal for details.':'Image processing error. Check the VS Code terminal for details.'});}
@@ -428,10 +427,11 @@ async function api(req,res,route){
   if(!process.env.ADMIN_PASSWORD)return reply(res,503,{error:'Configure ADMIN_PASSWORD to enable admin dashboard.'});
   let d;try{d=await readBody(req,4096);}catch{return reply(res,400,{error:'Invalid request.'});}
   const a=Buffer.from(clean(d.password,300)),b=Buffer.from(process.env.ADMIN_PASSWORD);if(a.length!==b.length||!crypto.timingSafeEqual(a,b))return reply(res,401,{error:'Incorrect admin password.'});
-  if(d.action==='approve'||d.action==='reject'){const target=db.users.find(x=>x.id===d.id&&x.role==='dentist');if(!target)return reply(res,404,{error:'Application not found.'});target.approved=d.action==='approve';await save();}
-  return reply(res,200,{users:db.users.map(x=>({...publicUser(x),phone:x.phone,address:x.address})),events:db.events.slice(-100).reverse()});
+  if(d.action==='approve'||d.action==='reject'){const target=db.users.find(x=>x.id===d.id&&x.role==='dentist');if(!target)return reply(res,404,{error:'Professional account not found.'});target.approved=d.action==='approve';target.gdcVerified=d.action==='approve';target.reviewedAt=new Date().toISOString();await save();}
+  return reply(res,200,{users:db.users.map(x=>({...publicUser(x),phone:x.phone,address:x.address})),events:db.events.slice(-200).reverse().map(e=>({...e,userName:db.users.find(u=>u.id===e.userId)?.name||'Unknown',userEmail:db.users.find(u=>u.id===e.userId)?.email||'Guest'}))});
  }
  return reply(res,404,{error:'Not found.'});
 }
 const server=http.createServer(async(req,res)=>{try{const route=new URL(req.url,'http://localhost').pathname;if(route.startsWith('/api/'))return await api(req,res,route);if(req.method!=='GET')return reply(res,405,{error:'Method not allowed'});const file=path.resolve(PUBLIC,'.'+decodeURIComponent(route==='/'?'/index.html':route));if(!file.startsWith(PUBLIC+path.sep))return reply(res,403,{error:'Forbidden'});try{const data=await fs.readFile(file);res.writeHead(200,{'Content-Type':TYPES[path.extname(file)]||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store'});res.end(data);}catch{res.writeHead(404);res.end('Not found');}}catch(e){console.error(e);reply(res,500,{error:'Server error.'});}});
-init().then(()=>server.listen(PORT,()=>console.log(`Smile Labs Digital v0.7.5: http://localhost:${PORT}`))).catch(e=>{console.error(e);process.exit(1)});
+init().then(()=>server.listen(PORT,()=>console.log(`Smile Labs Digital v1.0.3: http://localhost:${PORT}`))).catch(e=>{console.error(e);process.exit(1)});
+
