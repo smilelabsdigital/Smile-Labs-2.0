@@ -72,7 +72,7 @@ function current(req){try{const raw=(req.headers.cookie||'').split(';').map(s=>s
 function cookie(res,user){res.setHeader('Set-Cookie',`sl_session=${token(user)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${process.env.COOKIE_SECURE==='true'?'; Secure':''}`);}
 // Preview quotas are lifetime, persisted in Neon. Approval adds 20 credits once; not unlimited.
 const currentMonth=()=>new Date().toISOString().slice(0,7);
-const guestLimit=()=>1; // One guest preview per persistent browser token
+const guestLimit=()=>10; // One guest preview per persistent browser token
 const dentistLimit=u=>u?.approved?30:10; // 10 on verified signup, +20 on manual approval
 // Administrator testing is granted ONLY to verified account email addresses explicitly
 // listed server-side. The dashboard password alone is not a signed-in studio account.
