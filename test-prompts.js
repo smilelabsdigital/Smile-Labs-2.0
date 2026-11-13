@@ -37,4 +37,3 @@ assert.throws(()=>selected('whitening','invalid'));
 assert.throws(()=>selected('other','B1'));
 console.log('PASS: Exact missing-teeth prompt, 3 separate whitening-only prompts, UI values and API routing verified.');
 console.log('NOTE: This checks routing, not whether a generative AI preserves tooth anatomy in its image output.');
-

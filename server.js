@@ -68,17 +68,17 @@ async function readBody(req,limit=20*1024*1024){let a=[],n=0;for await(const ch 
 const clean=(v,max=120)=>typeof v==='string'?v.trim().slice(0,max):'';
 const emailOK=s=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)&&s.length<=254;
 function token(user){const payload=Buffer.from(JSON.stringify({id:user.id,exp:Date.now()+30*86400000})).toString('base64url');return payload+'.'+crypto.createHmac('sha256',SECRET).update(payload).digest('base64url');}
-function current(req){try{const raw=(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('sl_session='))?.slice(11)||'';const [p,s]=raw.split('.');if(!p||!s)return null;const valid=crypto.createHmac('sha256',SECRET).update(p).digest('base64url');if(!crypto.timingSafeEqual(Buffer.from(s),Buffer.from(valid)))return null;const d=JSON.parse(Buffer.from(p,'base64url').toString());return d.exp>Date.now()?db.users.find(u=>u.id===d.id)||null:null;}catch{return null;}}
+function current(req){try{const auth=String(req.headers.authorization||'');const raw=(auth.startsWith('Bearer ')?auth.slice(7):'')||((req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('sl_session='))?.slice(11)||'');const [p,s]=raw.split('.');if(!p||!s)return null;const valid=crypto.createHmac('sha256',SECRET).update(p).digest('base64url');if(!crypto.timingSafeEqual(Buffer.from(s),Buffer.from(valid)))return null;const d=JSON.parse(Buffer.from(p,'base64url').toString());return d.exp>Date.now()?db.users.find(u=>u.id===d.id)||null:null;}catch{return null;}}
 function cookie(res,user){res.setHeader('Set-Cookie',`sl_session=${token(user)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${process.env.COOKIE_SECURE==='true'?'; Secure':''}`);}
 // Preview quotas are lifetime, persisted in Neon. Approval adds 20 credits once; not unlimited.
 const currentMonth=()=>new Date().toISOString().slice(0,7);
-const guestLimit=()=>10; // One guest preview per persistent browser token
+const guestLimit=()=>1; // One guest preview per persistent browser token
 const dentistLimit=u=>u?.approved?30:10; // 10 on verified signup, +20 on manual approval
 // Administrator testing is granted ONLY to verified account email addresses explicitly
 // listed server-side. The dashboard password alone is not a signed-in studio account.
 // No admin privileges can be requested through the registration form or browser.
 const adminTestEmails=()=>new Set([process.env.ADMIN_EMAIL||'',...(process.env.ADMIN_TEST_EMAILS||process.env.ADMIN_TEST_EMAIL||'').split(',')].map(v=>v.trim().toLowerCase()).filter(Boolean));
-const isAdminTester=u=>Boolean(u?.verified && adminTestEmails().has(String(u.email||'').toLowerCase()));
+const isAdminTester=u=>Boolean(u?.verified && ((u.role==='admin' && !!process.env.ADMIN_LOGIN_EMAIL && String(u.email||'').toLowerCase()===process.env.ADMIN_LOGIN_EMAIL.trim().toLowerCase()) || adminTestEmails().has(String(u.email||'').toLowerCase())));
 function usedThisPeriod(u){return Math.max(0,Number(u.used)||0);}
 function publicUser(u){return u?{id:u.id,name:u.name,email:u.email,role:u.role,verified:u.verified,approved:u.approved,adminTester:isAdminTester(u),used:usedThisPeriod(u),limit:isAdminTester(u)?null:(u.role==='dentist'?dentistLimit(u):(u.guestTokenHash?guestLimit():1)),clinic:u.clinic||'',gdc:u.gdc||'',created:u.created,verifiedGdc:!!u.gdcVerified}:null;}
 async function sendEmail(to,subject,html){
@@ -319,9 +319,100 @@ async function whitenExistingTeeth(png,shadeKey="natural"){
  return sharp(output,{raw:{width:w,height:h,channels:3}}).png().toBuffer();
 }
 
+// Password is read exclusively from Render environment. Never put credentials in public assets.
+// Add your own strong ADMIN_LOGIN_PASSWORD and ADMIN_LOGIN_EMAIL in Render.
+const adminLoginFailures=new Map();
+function adminLoginThrottle(id){
+ const now=Date.now(),entry=adminLoginFailures.get(id)||{start:now,count:0};
+ if(now-entry.start>15*60*1000){entry.start=now;entry.count=0;}
+ if(entry.count>=5)return false;
+ entry.count++;adminLoginFailures.set(id,entry);
+ if(adminLoginFailures.size>2000){for(const [k,v] of adminLoginFailures)if(now-v.start>15*60*1000)adminLoginFailures.delete(k);}
+ return true;
+}
+function equalSecret(left,right){
+ const a=crypto.createHash('sha256').update(String(left)).digest(),b=crypto.createHash('sha256').update(String(right)).digest();
+ return crypto.timingSafeEqual(a,b);
+}
 const pending=new Set();
+// Account deletion: independent email re-verification, not a bearer-only destructive action.
+// PINs are HMAC-hashed with the server secret, expire after 10 minutes, and allow 5 attempts.
+const deletionRate=new Map();
+function deletionKey(email){return crypto.createHmac('sha256',SECRET).update('deletion-rate:'+email).digest('hex');}
+function deletionCodeHash(email,code){return crypto.createHmac('sha256',SECRET).update('delete:'+email+':'+code).digest('hex');}
+function deletionAllowed(email){
+ const key=deletionKey(email),now=Date.now(),history=(deletionRate.get(key)||[]).filter(x=>now-x<3600000);
+ if(history.length>=5)return false;
+ history.push(now);deletionRate.set(key,history);
+ // Bound memory for long-running servers.
+ if(deletionRate.size>3000){for(const [k,v] of deletionRate){if(v.every(x=>now-x>3600000))deletionRate.delete(k);}}
+ return true;
+}
+async function requestAccountDeletion(req,res){
+ let d;try{d=await readBody(req,4096);}catch{return reply(res,400,{error:'Invalid request.'});}
+ const email=clean(d.email,254).toLowerCase();
+ if(!emailOK(email))return reply(res,400,{error:'Enter a valid email address.'});
+ if(!deletionAllowed(email))return reply(res,429,{error:'Too many requests. Try again later.'});
+ const user=db.users.find(x=>x.role==='dentist'&&x.verified&&x.email===email);
+ // Do not reveal whether a registration exists.
+ const message='If this address has a registered account, a confirmation code will be sent.';
+ if(!user)return reply(res,200,{message});
+ const code=String(crypto.randomInt(100000,1000000));
+ try{
+  await sendEmail(user.email,'Smile Labs Digital — confirm account deletion',
+   `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px"><h2>Account deletion request</h2><p>Enter this code in Smile Labs Digital to permanently delete your professional account:</p><p style="font-size:32px;letter-spacing:5px"><strong>${code}</strong></p><p>This code expires in 10 minutes. If you did not request deletion, ignore this message and consider contacting support.</p><p>Smile Labs Digital</p></div>`);
+ }catch(e){console.error('Deletion verification email failed:',e.message);return reply(res,503,{error:'Unable to send confirmation email. Try again later.'});}
+ user.deleteCodeHash=deletionCodeHash(email,code);
+ user.deleteCodeUntil=Date.now()+10*60000;
+ user.deleteCodeAttempts=0;
+ await save();
+ return reply(res,200,{message});
+}
+async function confirmAccountDeletion(req,res){
+ let d;try{d=await readBody(req,4096);}catch{return reply(res,400,{error:'Invalid request.'});}
+ const email=clean(d.email,254).toLowerCase(),code=clean(d.code,8);
+ if(!emailOK(email)||!/^[0-9]{6}$/.test(code))return reply(res,400,{error:'Enter the email and six-digit code.'});
+ const user=db.users.find(x=>x.role==='dentist'&&x.verified&&x.email===email);
+ if(!user||!user.deleteCodeHash||user.deleteCodeUntil<Date.now())return reply(res,400,{error:'Invalid or expired code.'});
+ if((user.deleteCodeAttempts||0)>=5)return reply(res,429,{error:'Too many incorrect codes. Request a new code.'});
+ const supplied=deletionCodeHash(email,code);
+ if(!crypto.timingSafeEqual(Buffer.from(supplied),Buffer.from(user.deleteCodeHash))){
+  user.deleteCodeAttempts=(user.deleteCodeAttempts||0)+1;await save();
+  return reply(res,400,{error:'Invalid or expired code.'});
+ }
+ if(pending.has(user.id))return reply(res,409,{error:'An AI generation is still running. Please try again after it finishes.'});
+ // Removing the account immediately invalidates signed sessions: current() checks db.users.
+ // Also purge all stored activity referencing the account and its profile metadata.
+ db.users=db.users.filter(x=>x.id!==user.id);
+ db.events=db.events.filter(x=>x.userId!==user.id);
+ try{await save();}catch(e){console.error('Account deletion storage failed:',e);return reply(res,503,{error:'Account deletion could not be completed. Please contact support.'});}
+ res.setHeader('Set-Cookie','sl_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0');
+ return reply(res,200,{deleted:true,message:'Your Smile Labs Digital account and its stored activity have been deleted.'});
+}
+
 
 async function api(req,res,route){
+ if(route==='/api/admin-login'&&req.method==='POST'){
+  let d;try{d=await readBody(req,4096);}catch{return reply(res,400,{error:'Invalid sign-in request.'});}
+  const email=clean(d.email,254).toLowerCase(),password=typeof d.password==='string'?d.password:'';
+  const expectedEmail=String(process.env.ADMIN_LOGIN_EMAIL||'').trim().toLowerCase();
+  const expectedPassword=process.env.ADMIN_LOGIN_PASSWORD||'';
+  if(!expectedEmail||!expectedPassword)return reply(res,503,{error:'Administrator sign-in is not configured.'});
+  // Rate limit by account and client connection. Password-only access is never exposed in JavaScript.
+  const bucket=crypto.createHmac('sha256',SECRET).update(email+'|'+String(req.socket.remoteAddress||'')).digest('hex');
+  if(!adminLoginThrottle(bucket))return reply(res,429,{error:'Too many sign-in attempts. Try again later.'});
+  if(email!==expectedEmail||!equalSecret(password,expectedPassword))return reply(res,401,{error:'Incorrect administrator credentials.'});
+  let admin=db.users.find(u=>u.email===expectedEmail);
+  if(!admin){admin={id:crypto.randomUUID(),role:'admin',name:'Smile Labs Admin',email:expectedEmail,phone:'',address:'',clinic:'',gdc:'',created:new Date().toISOString(),verified:true,approved:true,used:0};db.users.push(admin);}
+  // A previously registered email may be promoted only following successful admin password authentication.
+  admin.role='admin';admin.verified=true;admin.approved=true;
+  await save();cookie(res,admin);
+  adminLoginFailures.delete(bucket);
+  return reply(res,200,{user:publicUser(admin),mobileToken:req.headers['x-smile-mobile-app']==='1'?token(admin):undefined});
+ }
+
+ if(route==='/api/account/delete-request'&&req.method==='POST')return requestAccountDeletion(req,res);
+ if(route==='/api/account/delete-confirm'&&req.method==='POST')return confirmAccountDeletion(req,res);
  if(route==='/api/status'&&req.method==='GET')return reply(res,200,{user:publicUser(current(req)),aiConfigured:!!process.env.OPENAI_API_KEY,emailConfigured:!!(process.env.RESEND_API_KEY&&process.env.RESEND_FROM_EMAIL),prototype:true});
  if(route==='/api/guest'&&req.method==='POST'){
   // Demonstration-only 50 uses per signed browser cookie, not strong anti-abuse.
@@ -335,13 +426,14 @@ async function api(req,res,route){
    db.users.push(guest);await save();
    res.setHeader('Set-Cookie',[`sl_guest_token=${raw}; HttpOnly; SameSite=Lax; Path=/; Max-Age=31536000${process.env.COOKIE_SECURE==='true'?'; Secure':''}`,`sl_session=${token(guest)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${process.env.COOKIE_SECURE==='true'?'; Secure':''}`]);
   }else cookie(res,guest);
-  return reply(res,200,{user:publicUser(guest)});
+  return reply(res,200,{user:publicUser(guest),mobileToken:req.headers['x-smile-mobile-app']==='1'?token(guest):undefined});
  }
  if(route==='/api/register'&&req.method==='POST'){
   let d;try{d=await readBody(req,16000);}catch{return reply(res,400,{error:'Invalid registration form.'});}
   const role=d.role==='dentist'?'dentist':d.role==='public'?'public':null,name=clean(d.name),email=clean(d.email,254).toLowerCase(),phone=clean(d.phone,40),address=clean(d.address,240),clinic=clean(d.clinic),gdc=clean(d.gdc,30);
   if(!role||name.length<2||!emailOK(email)||phone.length<6||address.length<5||(role==='dentist'&&(!clinic||!/^\d{5,8}$/.test(gdc))))return reply(res,400,{error:'Please complete all required fields. GDC number must contain 5–8 digits.'});
   if(!d.terms||!d.imageAcknowledgement)return reply(res,400,{error:'Please accept the terms and privacy notice for this prototype.'});
+  if(email===String(process.env.ADMIN_LOGIN_EMAIL||'').trim().toLowerCase())return reply(res,409,{error:'This account uses administrator sign-in.'});
   if(db.users.some(u=>u.email===email))return reply(res,409,{error:'This email is already registered. Please sign in instead.'});
   const code=String(crypto.randomInt(100000,1000000)),u={id:crypto.randomUUID(),role,name,email,phone,address,clinic,gdc,created:new Date().toISOString(),verified:false,approved:false,used:0,month:currentMonth(),codeHash:crypto.createHash('sha256').update(code).digest('hex'),codeUntil:Date.now()+15*60000};
   db.users.push(u);await save();
@@ -354,7 +446,7 @@ async function api(req,res,route){
  if(route==='/api/verify'&&req.method==='POST'){
   let d;try{d=await readBody(req,4096);}catch{return reply(res,400,{error:'Invalid request.'});}const u=db.users.find(x=>x.email===clean(d.email,254).toLowerCase());const hash=crypto.createHash('sha256').update(clean(d.code,12)).digest('hex');
   if(!u||!u.codeHash||u.codeUntil<Date.now()||hash!==u.codeHash)return reply(res,400,{error:'Invalid or expired code.'});
-  u.verified=true;delete u.codeHash;delete u.codeUntil;await save();cookie(res,u);return reply(res,200,{user:publicUser(u)});
+  u.verified=true;delete u.codeHash;delete u.codeUntil;await save();cookie(res,u);return reply(res,200,{user:publicUser(u),mobileToken:req.headers['x-smile-mobile-app']==='1'?token(u):undefined});
  }
  if(route==='/api/login'&&req.method==='POST'){
   // Email code sign-in, no password storage.
@@ -434,4 +526,3 @@ async function api(req,res,route){
 }
 const server=http.createServer(async(req,res)=>{try{const route=new URL(req.url,'http://localhost').pathname;if(route.startsWith('/api/'))return await api(req,res,route);if(req.method!=='GET')return reply(res,405,{error:'Method not allowed'});const file=path.resolve(PUBLIC,'.'+decodeURIComponent(route==='/'?'/index.html':route));if(!file.startsWith(PUBLIC+path.sep))return reply(res,403,{error:'Forbidden'});try{const data=await fs.readFile(file);res.writeHead(200,{'Content-Type':TYPES[path.extname(file)]||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':'no-store'});res.end(data);}catch{res.writeHead(404);res.end('Not found');}}catch(e){console.error(e);reply(res,500,{error:'Server error.'});}});
 init().then(()=>server.listen(PORT,()=>console.log(`Smile Labs Digital v1.0.3: http://localhost:${PORT}`))).catch(e=>{console.error(e);process.exit(1)});
-
