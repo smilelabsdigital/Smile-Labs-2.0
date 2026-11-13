@@ -336,3 +336,29 @@ body {
 }
 @media(max-width:340px){.brand-separator,.header-descriptor{display:none!important}}
 @media(prefers-reduced-motion:reduce){#dashboard .treatment{transition:none}}
+
+
+/* Tooth artwork only — eliminate the old solid/gradient image panel. */
+#welcome .welcome-pic.tooth-art {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  display: grid;
+  place-items: center;
+}
+#welcome .welcome-pic.tooth-art::before,
+#welcome .welcome-pic.tooth-art::after { content: none !important; display: none !important; }
+#welcome .welcome-pic.tooth-art .hero-tooth-image {
+  display: block;
+  width: min(100%, 440px) !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  background: transparent !important;
+  filter: drop-shadow(0 0 18px rgba(170,100,255,.28)) !important;
+}
+@media (min-width:760px) {
+  #welcome .welcome-pic.tooth-art .hero-tooth-image {width:100% !important;}
+}
