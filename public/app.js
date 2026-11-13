@@ -87,4 +87,3 @@ refreshJourney();
 
 // One no-registration preview: server-issued guest session, never client-only credit enforcement.
 $('guestLaunch').addEventListener('click',async()=>{const btn=$('guestLaunch');btn.disabled=true;$('guestFeedback').textContent='Opening your free preview…';try{const r=await call('/api/guest',{});account=r.user;renderAccount();$('guestFeedback').textContent='';$('workspace').scrollIntoView({behavior:'smooth',block:'start'});}catch(e){$('guestFeedback').textContent=e.message;}finally{btn.disabled=false;}});
-
